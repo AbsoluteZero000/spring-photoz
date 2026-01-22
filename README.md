@@ -1,96 +1,95 @@
 # SpringPhotoz
 
-Lightweight Spring Boot service that stores simple photo metadata (id, fileName).
+A Spring Boot photo upload and download service that stores image files in memory with metadata.
 
-This repository contains a tiny example API built with Spring Boot and Maven. It demonstrates basic CRUD-style endpoints and validation using Jakarta Validation.
+This repository contains a complete photo management API built with Spring Boot and Maven. It demonstrates file upload/download, CRUD operations, and includes a simple web interface for uploading photos.
 
-## Quick overview
+## Features
 
-- Model: `Photo` (fields: `id`, `fileName`) — `fileName` is validated with `@NotEmpty`.
-- Main endpoints (implemented in `PhotozController`):
-  - GET  /         -> returns `Hello, World`
-  - GET  /photoz   -> list all photos
-  - GET  /photoz/{id} -> get a photo by id (404 if not found)
-  - POST /photoz   -> create a photo (body: JSON, `fileName` required)
-  - DELETE /photoz/{id} -> delete a photo by id (404 if not found)
+- **Photo Upload**: Upload image files via multipart form data
+- **Photo Download**: Download stored photos with proper content type and filename headers
+- **CRUD Operations**: List, get, create, and delete photos
+- **Web Interface**: Simple HTML upload form at `/upload.html`
+- **In-Memory Storage**: Photos stored as byte arrays with metadata (not persistent across restarts)
+
+## Model
+
+`Photo` entity with fields:
+- `id`: String identifier (UUID for new photos)
+- `fileName`: String (validated with `@NotEmpty`)
+- `contentType`: String (MIME type)
+- `data`: byte[] (actual image data, excluded from JSON serialization)
+
+## API Endpoints
+
+### Photo Management
+- `GET /` → Returns "Hello, World"
+- `GET /photoz` → List all photos (metadata only)
+- `GET /photoz/{id}` → Get photo metadata by ID
+- `POST /photoz` → Upload photo (multipart form data)
+- `DELETE /photoz/{id}` → Delete photo by ID
+
+### File Download
+- `GET /download/{id}` → Download photo file with proper headers
+
+### Web Interface
+- `GET /upload.html` → Photo upload form
 
 ## Requirements
 
-- Java 17+ (project uses Spring Boot 4.x)
-- Maven 3.6+ (the project includes the Maven wrapper `mvnw`)
+- Java 17+
+- Maven 3.6+
 
-## Build
-
-From the project root run:
+## Build & Run
 
 ```bash
-# using the wrapper (recommended)
+# Build
 ./mvnw clean package
 
-# or with a local mvn installation
-mvn clean package
-```
-
-The packaged JAR will be in `target/`.
-
-## Run
-
-Run the app via the wrapper:
-
-```bash
+# Run
 ./mvnw spring-boot:run
 ```
 
-Or run the packaged JAR:
+Application starts on port 8080.
 
+## Usage Examples
+
+### Upload via curl
 ```bash
-java -jar target/*.jar
+curl -X POST http://localhost:8080/photoz \
+  -F "data=@/path/to/image.jpg"
 ```
 
-The app will start on the default port (8080) unless overridden in `src/main/resources/application.properties` or via `SPRING_APPLICATION_JSON` / `--server.port`.
-
-## API examples (curl)
-
-List photos:
-
+### Download via curl
 ```bash
-curl -sS http://localhost:8080/photoz | jq .
+curl -O http://localhost:8080/download/{photo-id}
 ```
 
-Get a photo by id (returns 404 if missing):
-
+### List photos
 ```bash
-curl -i http://localhost:8080/photoz/1
+curl http://localhost:8080/photoz
 ```
 
-Create a photo (fileName is required):
+### Web Upload
+Navigate to `http://localhost:8080/upload.html` and use the file upload form.
 
-```bash
-curl -i -X POST http://localhost:8080/photoz \
-  -H "Content-Type: application/json" \
-  -d '{"fileName":"example.jpg"}'
-```
+## Implementation Details
 
-If `fileName` is empty or missing, the request will fail validation and the server will return a 400 Bad Request.
-
-Delete a photo:
-
-```bash
-curl -i -X DELETE http://localhost:8080/photoz/<id>
-```
+- **Controllers**: `PhotozController` (CRUD), `DownloadController` (file download)
+- **Service**: `PhotozService` with in-memory `Map<String, Photo>` storage
+- **Validation**: Jakarta Validation for required fields
+- **File Handling**: MultipartFile support with byte array storage
+- **Error Handling**: Proper 404 responses for missing photos
 
 ## Tests
-
-Run the project's tests with:
 
 ```bash
 ./mvnw test
 ```
 
-## Notes & tips
+## Notes
 
-- The controller uses an in-memory `Map` as a simple data store; data is not persisted across restarts.
-- The default seed includes a photo with id `1` and fileName `hello.jpg`.
-- Add a `LICENSE` file if you plan to publish the code.
-
-If you want, I can add example Postman/HTTPie snippets or a minimal OpenAPI/Swagger config next.
+- Data is stored in memory only - lost on application restart
+- Default seed includes one photo with id "1" and fileName "hello.jpg"
+- No database dependencies - suitable for demos and testing
+- Supports any image format via multipart upload
